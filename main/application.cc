@@ -30,6 +30,12 @@ Application::Application() : notify_player_(audio_service_) {
     aec_mode_ = kAecOnDeviceSide;
 #elif CONFIG_USE_SERVER_AEC
     aec_mode_ = kAecOnServerSide;
+    // Experimental barge-in path: keep uplink during TTS + hello features.aec.
+    // Success still depends on server AEC/realtime support; expect possible
+    // false barge-in / self-talk if the server ignores timestamps.
+    ESP_LOGW(TAG,
+             "EXPERIMENTAL: CONFIG_USE_SERVER_AEC enabled (realtime uplink during "
+             "TTS). Voice barge-in is NOT guaranteed without matching server support.");
 #else
     aec_mode_ = kAecOff;
 #endif
@@ -1058,6 +1064,14 @@ void Application::HandleStateChangedEvent() {
                 audio_service_.EnableVoiceProcessing(false);
                 // Only AFE wake word can be detected in speaking mode
                 audio_service_.EnableWakeWordDetection(audio_service_.IsAfeWakeWord());
+            } else {
+                // Realtime / server-AEC experimental path: leave voice processing
+                // running so uplink+timestamps continue during TTS. Button abort
+                // and wake-word paths remain available as local fallbacks.
+                ESP_LOGI(TAG,
+                         "Speaking with realtime mode: keeping uplink for experimental "
+                         "server barge-in (aec_mode=%d)",
+                         static_cast<int>(aec_mode_));
             }
             audio_service_.ResetDecoder();
             break;
