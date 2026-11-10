@@ -5,7 +5,14 @@
     "builds": [
         {
             "name": "zhengchen-1.54tft-wifi",
-            "sdkconfig_append": []
+            "sdkconfig_append": [
+                "CONFIG_BOARD_TYPE_ZHENGCHEN_1_54TFT_WIFI=y",
+                "CONFIG_AUTO_LISTEN_ON_BOOT=y",
+                "CONFIG_OTA_URL=\"https://robot.onelinglabs.com/xiaozhi/ota/\"",
+                "CONFIG_ESPTOOLPY_FLASHMODE_DIO=y",
+                "CONFIG_ESPTOOLPY_FLASHFREQ_80M=y",
+                "CONFIG_USE_SERVER_AEC=n"
+            ]
         }
     ]
 }

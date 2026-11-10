@@ -984,6 +984,16 @@ config WAKE_WORD_DETECTION_IN_LISTENING
         which allows interrupting the current conversation.
         When disabled (default), wake word detection is turned off during listening.
 
+config AUTO_LISTEN_ON_BOOT
+    bool "Auto enter listening after boot activation"
+    default n
+    help
+        After power-on network init and activation succeed, automatically open
+        the audio channel and enter listening once. This is a one-shot action
+        for the current boot: farewell / channel close returns to idle and does
+        not reopen. Button and wake-word behavior are unchanged. Offline Wi-Fi
+        provisioning is unaffected because activation has not completed yet.
+
 config USE_AUDIO_PROCESSOR
     bool "Enable AFE Audio Processing"
     default y

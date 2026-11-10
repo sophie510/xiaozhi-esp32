@@ -223,6 +223,8 @@ void Application::Run() {
                 pending_listening_start_ = false;
                 StartListeningAudio();
             }
+            // Boot auto-listen waits for the success sound to finish first.
+            MaybeAutoListenOnBoot();
         }
 
         if (bits & MAIN_EVENT_TOGGLE_CHAT) {
@@ -358,6 +360,12 @@ void Application::HandleActivationDoneEvent() {
         Schedule([this]() {
             // Play the success sound to indicate the device is ready
             audio_service_.PlaySound(Lang::Sounds::OGG_SUCCESS);
+#ifdef CONFIG_AUTO_LISTEN_ON_BOOT
+            // One-shot only for this boot after successful activation.
+            // Farewell / channel close must not re-arm this flag.
+            auto_listen_on_boot_pending_ = true;
+            MaybeAutoListenOnBoot();
+#endif
         });
     }
 }
@@ -1095,6 +1103,40 @@ void Application::ConfigureWakeWordForListening() {
 #else
     // Disable wake word detection in listening mode
     audio_service_.EnableWakeWordDetection(false);
+#endif
+}
+
+void Application::MaybeAutoListenOnBoot() {
+#ifdef CONFIG_AUTO_LISTEN_ON_BOOT
+    if (!auto_listen_on_boot_pending_) {
+        return;
+    }
+
+    // Only start from idle after activation. Skip wifi-config / activating /
+    // already-busy paths so we never create a duplicate session or loop into
+    // provisioning.
+    if (GetDeviceState() != kDeviceStateIdle) {
+        return;
+    }
+    if (!protocol_) {
+        auto_listen_on_boot_pending_ = false;
+        return;
+    }
+    if (protocol_->IsAudioChannelOpened()) {
+        // User or wake word already opened a session; consume the one-shot.
+        auto_listen_on_boot_pending_ = false;
+        return;
+    }
+    if (!audio_service_.IsPlaybackIdle()) {
+        // Wait for OGG_SUCCESS (or other local playback) to drain.
+        return;
+    }
+
+    auto_listen_on_boot_pending_ = false;
+    ESP_LOGI(TAG, "Auto listen on boot: opening chat session");
+    // Reuse the same path as the boot button so listening UI/LED/status stay
+    // consistent and button / wake-word behavior remains unchanged afterward.
+    xEventGroupSetBits(event_group_, MAIN_EVENT_TOGGLE_CHAT);
 #endif
 }
 
