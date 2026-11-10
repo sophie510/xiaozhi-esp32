@@ -1018,11 +1018,18 @@ config USE_DEVICE_AEC
         To work properly, device-side AEC requires a clean output reference path from the speaker signal and physical acoustic isolation between the microphone and speaker.
 
 config USE_SERVER_AEC
-    bool "Enable Server-Side AEC (Unstable)"
+    bool "Enable Server-Side AEC (Unstable / Experimental)"
     default n
     depends on USE_AUDIO_PROCESSOR
     help
-        To work perperly, server-side AEC requires server support
+        EXPERIMENTAL and marked unstable upstream. When enabled, the device
+        advertises features.aec in hello, uses listen mode "realtime", and
+        keeps microphone uplink running during TTS so the server can attempt
+        barge-in with playback timestamps. This does NOT guarantee successful
+        voice interrupt: the server must honor realtime + AEC, cancel speaker
+        echo, and stop TTS on barge-in. Without that support, uplink echo can
+        cause false ASR / self-talk. Device-side AEC is a separate option and
+        needs a speaker reference path this Zhengchen 1.54TFT WiFi board lacks.
 
 config USE_AUDIO_DEBUGGER
     bool "Enable Audio Debugger"
